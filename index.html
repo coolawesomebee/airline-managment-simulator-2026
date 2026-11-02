@@ -606,10 +606,12 @@
         &copy; 2026 Airline Management Simulator. All rights reserved.
       </p>
     </footer>
-    <script src="https://unpkg.com"></script>
+<link rel="stylesheet" href="https://unpkg.com" />
+<script src="https://unpkg.com"></script>
 
 <script>
   let hubDropdown = null;
+  const targetDatasetUrl = "./airports.json";
 
   function initDropdown() {
     const el = document.getElementById('hub-selection');
@@ -618,7 +620,7 @@
     hubDropdown = new SlimSelect({
       select: '#hub-selection',
       settings: {
-        placeholderText: 'Search 28,000+ jet & feeder hubs...',
+        placeholderText: 'Search 5,000ft+ lighted corporate hubs...',
         allowDeselect: false
       }
     });
@@ -634,38 +636,23 @@
 
   async function loadGlobalAirports() {
     try {
-      const response = await fetch("https://jsdelivr.net");
-      if (!response.ok) throw new Error();
+      const response = await fetch(targetDatasetUrl);
+      if (!response.ok) throw new Error("Dataset download failed.");
 
       const parsedData = await response.json();
       const parsedList = [];
 
-      Object.keys(parsedData).forEach(icao => {
-        let ap = parsedData[icao];
-        let iata = ap.iata || "";
-        let name = ap.name || "";
-        let city = ap.city || "Regional Hub";
-        let country = ap.country || "Global System Nodes";
-
-        if (iata && iata.length === 3 && iata !== "\\N") {
-          let lowerName = name.toLowerCase();
-          
-          let isTinyTrack = lowerName.includes("glider") || 
-                            lowerName.includes("ultralight") || 
-                            lowerName.includes("rc park") || 
-                            lowerName.includes("heliport") || 
-                            lowerName.includes("seaplane");
-
-          if (!isTinyTrack) {
-            parsedList.push({
-              text: `[${iata}] ${name} - ${city}`,
-              value: iata,
-              country: country
-            });
-          }
-        }
+      // Loop through the data keys coming from your GitHub workflow script
+      Object.keys(parsedData).forEach(codeKey => {
+        let ap = parsedData[codeKey];
+        parsedList.push({
+          text: `[${codeKey}] ${ap.name} - ${ap.municipality || 'Regional Base'}`,
+          value: codeKey,
+          country: ap.country || "Global System Nodes"
+        });
       });
 
+      // Sort alpha-numerically by country destination
       parsedList.sort((a, b) => a.country.localeCompare(b.country) || a.text.localeCompare(b.text));
 
       const structuredGroups = [];
@@ -692,7 +679,7 @@
       }
 
     } catch (error) {
-      console.error(error);
+      console.error("Local database fetch exception, initializing hardcoded core hubs:", error);
       const fallbacks = [
         { text: "[SIN] Singapore Changi Airport - Singapore", value: "SIN" },
         { text: "[LAX] Los Angeles International - Los Angeles", value: "LAX" },
@@ -793,6 +780,7 @@
     document.getElementById("step3").className = "step-node active";
   };
 </script>
+
 
   </body>
 </html>
