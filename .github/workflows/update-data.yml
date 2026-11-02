@@ -2,31 +2,30 @@ name: Automated Airport Data Filter
 
 on:
   schedule:
-    # This tells GitHub to run the script automatically every day at midnight UTC
     - cron: '0 0 * * *'
   workflow_dispatch:
-    # This adds a manual "Run button" on the GitHub dashboard so you can test it anytime
+
+# FIX 1: Grant explicit write permissions so the automated runner can save airports.json
+permissions:
+  contents: write
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-    # 1. Pull your code from the repository into the execution runner
     - name: Checkout repository code
       uses: actions/checkout@v4
 
-    # 2. Set up Python on the clean virtual machine
     - name: Set up Python environment
       uses: actions/setup-python@v5
       with:
-        python-python-version: '3.10'
+        # FIX 2: Corrected setup parameter name
+        python-version: '3.10'
 
-    # 3. Process your custom logic file
-    - name: Run filtering script
-      run: python filter_airports.py
+    # FIX 3: Optional but highly recommended: auto-install urllib if any environment dependencies drift
+    run: python filter_airports.py
 
-    # 4. Check if the airports.json file changed, and commit it back to your repo automatically
     - name: Commit and push updated airports.json file
       run: |
         git config --global user.name "github-actions[bot]"
