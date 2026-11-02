@@ -608,213 +608,191 @@
     </footer>
     <script src="https://unpkg.com"></script>
 
-    <script>
-      let hubDropdown = null;
+<script>
+  let hubDropdown = null;
 
-      function initDropdown() {
-        const el = document.getElementById("hub-selection");
-        if (!el) return false;
-
-        hubDropdown = new SlimSelect({
-          select: "#hub-selection",
-          settings: {
-            placeholderText: "Search commercial, executive & feeder hubs...",
-            allowDeselect: false,
-          },
-        });
-        return true;
+  function initDropdown() {
+    const el = document.getElementById('hub-selection');
+    if (!el) return false;
+    
+    hubDropdown = new SlimSelect({
+      select: '#hub-selection',
+      settings: {
+        placeholderText: 'Search 28,000+ jet & feeder hubs...',
+        allowDeselect: false
       }
+    });
+    return true;
+  }
 
-      window.addEventListener("DOMContentLoaded", () => {
-        const ready = initDropdown();
-        if (ready) {
-          loadGlobalAirports();
+  window.addEventListener("DOMContentLoaded", () => {
+    const ready = initDropdown();
+    if (ready) {
+      loadGlobalAirports();
+    }
+  });
+
+  async function loadGlobalAirports() {
+    try {
+      const response = await fetch("https://jsdelivr.net");
+      if (!response.ok) throw new Error();
+
+      const parsedData = await response.json();
+      const parsedList = [];
+
+      Object.keys(parsedData).forEach(icao => {
+        let ap = parsedData[icao];
+        let iata = ap.iata || "";
+        let name = ap.name || "";
+        let city = ap.city || "Regional Hub";
+        let country = ap.country || "Global System Nodes";
+
+        if (iata && iata.length === 3 && iata !== "\\N") {
+          let lowerName = name.toLowerCase();
+          
+          let isTinyTrack = lowerName.includes("glider") || 
+                            lowerName.includes("ultralight") || 
+                            lowerName.includes("rc park") || 
+                            lowerName.includes("heliport") || 
+                            lowerName.includes("seaplane");
+
+          if (!isTinyTrack) {
+            parsedList.push({
+              text: `[${iata}] ${name} - ${city}`,
+              value: iata,
+              country: country
+            });
+          }
         }
       });
 
-      async function loadGlobalAirports() {
-        try {
-          const response = await fetch(
-            "https://raw.githubusercontent.com/mwgg/Airports/master/airports.json"
-          );
-          if (!response.ok) throw new Error();
+      parsedList.sort((a, b) => a.country.localeCompare(b.country) || a.text.localeCompare(b.text));
 
-          const parsedData = await response.json();
-          const parsedList = [];
+      const structuredGroups = [];
+      let currentCountry = "";
+      let currentGroupOptions = [];
 
-          Object.keys(parsedData).forEach((icao) => {
-            let ap = parsedData[icao];
-            let iata = ap.iata || "";
-            let name = ap.name || "";
-            let city = ap.city || "Regional Hub";
-            let country = ap.country || "Global System Nodes";
-
-            if (iata && iata.length === 3 && iata !== "\\N") {
-              let lowerName = name.toLowerCase();
-
-              let isTinyTrack =
-                lowerName.includes("glider") ||
-                lowerName.includes("ultralight") ||
-                lowerName.includes("rc park") ||
-                lowerName.includes("heliport") ||
-                lowerName.includes("seaplane");
-
-              if (!isTinyTrack) {
-                parsedList.push({
-                  text: `[${iata}] ${name} - ${city}`,
-                  value: iata,
-                  country: country,
-                });
-              }
-            }
-          });
-
-          parsedList.sort(
-            (a, b) =>
-              a.country.localeCompare(b.country) || a.text.localeCompare(b.text)
-          );
-
-          const structuredGroups = [];
-          let currentCountry = "";
-          let currentGroupOptions = [];
-
-          parsedList.forEach((ap) => {
-            if (ap.country !== currentCountry) {
-              if (currentCountry !== "") {
-                structuredGroups.push({
-                  label: currentCountry,
-                  options: currentGroupOptions,
-                });
-              }
-              currentCountry = ap.country;
-              currentGroupOptions = [];
-            }
-            currentGroupOptions.push({ text: ap.text, value: ap.value });
-          });
-
+      parsedList.forEach(ap => {
+        if (ap.country !== currentCountry) {
           if (currentCountry !== "") {
-            structuredGroups.push({
-              label: currentCountry,
-              options: currentGroupOptions,
-            });
+            structuredGroups.push({ label: currentCountry, options: currentGroupOptions });
           }
-
-          if (hubDropdown) {
-            hubDropdown.setData(structuredGroups);
-          }
-        } catch (error) {
-          console.error(error);
-          const fallbacks = [
-            {
-              text: "[SIN] Singapore Changi Airport - Singapore",
-              value: "SIN",
-            },
-            {
-              text: "[LAX] Los Angeles International - Los Angeles",
-              value: "LAX",
-            },
-            { text: "[LHR] London Heathrow Airport - London", value: "LHR" },
-            {
-              text: "[TEB] Teterboro Executive Airport - New Jersey",
-              value: "TEB",
-            },
-            {
-              text: "[VNY] Van Nuys Corporate Jet Hub - Los Angeles",
-              value: "VNY",
-            },
-          ];
-          if (hubDropdown) {
-            hubDropdown.setData(fallbacks);
-          }
+          currentCountry = ap.country;
+          currentGroupOptions = [];
         }
+        currentGroupOptions.push({ text: ap.text, value: ap.value });
+      });
+
+      if (currentCountry !== "") {
+        structuredGroups.push({ label: currentCountry, options: currentGroupOptions });
       }
 
-      function clearDynamicSteps() {
-        let node3 = document.getElementById("step3");
-        let node4 = document.getElementById("step4");
-        if (node3) node3.remove();
-        if (node4) node4.remove();
+      if (hubDropdown) {
+        hubDropdown.setData(structuredGroups);
       }
 
-      function injectStepNode(id, number, labelText) {
-        if (document.getElementById(id)) return;
-        let container = document.getElementById("timeline-box");
-        let node = document.createElement("div");
-        node.className = "step-node";
-        node.id = id;
-        node.innerText = number;
-
-        let label = document.createElement("div");
-        label.className = "step-label";
-        label.innerText = labelText;
-
-        node.appendChild(label);
-        container.appendChild(node);
+    } catch (error) {
+      console.error(error);
+      const fallbacks = [
+        { text: "[SIN] Singapore Changi Airport - Singapore", value: "SIN" },
+        { text: "[LAX] Los Angeles International - Los Angeles", value: "LAX" },
+        { text: "[LHR] London Heathrow Airport - London", value: "LHR" },
+        { text: "[TEB] Teterboro Executive Airport - New Jersey", value: "TEB" },
+        { text: "[VNY] Van Nuys Corporate Jet Hub - Los Angeles", value: "VNY" }
+      ];
+      if (hubDropdown) {
+        hubDropdown.setData(fallbacks);
       }
+    }
+  }
 
-      document.getElementById("launch-btn").onclick = function () {
-        document.getElementById("home-panel").style.display = "none";
-        document.getElementById("login-panel").style.display = "block";
-        clearDynamicSteps();
-        document.getElementById("timeline-bar").style.width = "100%";
-        document.getElementById("step1").className = "step-node completed";
-        document.getElementById("step2").className = "step-node active";
-      };
+  function clearDynamicSteps() {
+    let node3 = document.getElementById("step3");
+    let node4 = document.getElementById("step4");
+    if (node3) node3.remove();
+    if (node4) node4.remove();
+  }
 
-      document.getElementById("login-btn").onclick = function () {
-        document.getElementById("login-panel").style.display = "none";
-        document.getElementById("difficulty-panel").style.display = "block";
-        clearDynamicSteps();
-        injectStepNode("step3", "3", "Rules");
-        document.getElementById("timeline-bar").style.width = "50%";
-        document.getElementById("step1").className = "step-node completed";
-        document.getElementById("step2").className = "step-node completed";
-        document.getElementById("step3").className = "step-node active";
-      };
+  function injectStepNode(id, number, labelText) {
+    if (document.getElementById(id)) return;
+    let container = document.getElementById("timeline-box");
+    let node = document.createElement("div");
+    node.className = "step-node";
+    node.id = id;
+    node.innerText = number;
 
-      let selectDifficulty = function () {
-        document.getElementById("difficulty-panel").style.display = "none";
-        document.getElementById("profile-panel").style.display = "block";
-        injectStepNode("step4", "4", "Setup");
-        document.getElementById("timeline-bar").style.width = "100%";
-        document.getElementById("step1").className = "step-node completed";
-        document.getElementById("step2").className = "step-node completed";
-        document.getElementById("step3").className = "step-node completed";
-        document.getElementById("step4").className = "step-node active";
-      };
+    let label = document.createElement("div");
+    label.className = "step-label";
+    label.innerText = labelText;
 
-      document.getElementById("btn-casual").onclick = selectDifficulty;
-      document.getElementById("btn-realistic").onclick = selectDifficulty;
-      document.getElementById("btn-ultra").onclick = selectDifficulty;
+    node.appendChild(label);
+    container.appendChild(node);
+  }
 
-      document.getElementById("login-back-btn").onclick = function () {
-        document.getElementById("login-panel").style.display = "none";
-        document.getElementById("home-panel").style.display = "flex";
-        clearDynamicSteps();
-        document.getElementById("timeline-bar").style.width = "0%";
-        document.getElementById("step1").className = "step-node active";
-        document.getElementById("step2").className = "step-node";
-      };
+  document.getElementById("launch-btn").onclick = function () {
+    document.getElementById("home-panel").style.display = "none";
+    document.getElementById("login-panel").style.display = "block";
+    clearDynamicSteps();
+    document.getElementById("timeline-bar").style.width = "100%";
+    document.getElementById("step1").className = "step-node completed";
+    document.getElementById("step2").className = "step-node active";
+  };
 
-      document.getElementById("difficulty-back-btn").onclick = function () {
-        document.getElementById("difficulty-panel").style.display = "none";
-        document.getElementById("login-panel").style.display = "block";
-        clearDynamicSteps();
-        document.getElementById("timeline-bar").style.width = "100%";
-        document.getElementById("step1").className = "step-node completed";
-        document.getElementById("step2").className = "step-node active";
-      };
+  document.getElementById("login-btn").onclick = function () {
+    document.getElementById("login-panel").style.display = "none";
+    document.getElementById("difficulty-panel").style.display = "block";
+    clearDynamicSteps();
+    injectStepNode("step3", "3", "Rules");
+    document.getElementById("timeline-bar").style.width = "50%";
+    document.getElementById("step1").className = "step-node completed";
+    document.getElementById("step2").className = "step-node completed";
+    document.getElementById("step3").className = "step-node active";
+  };
 
-      document.getElementById("profile-back-btn").onclick = function () {
-        document.getElementById("profile-panel").style.display = "none";
-        document.getElementById("difficulty-panel").style.display = "block";
-        let node4 = document.getElementById("step4");
-        if (node4) node4.remove();
-        document.getElementById("timeline-bar").style.width = "50%";
-        document.getElementById("step1").className = "step-node completed";
-        document.getElementById("step2").className = "step-node completed";
-        document.getElementById("step3").className = "step-node active";
-      };
-    </script>
+  let selectDifficulty = function () {
+    document.getElementById("difficulty-panel").style.display = "none";
+    document.getElementById("profile-panel").style.display = "block";
+    injectStepNode("step4", "4", "Setup");
+    document.getElementById("timeline-bar").style.width = "100%";
+    document.getElementById("step1").className = "step-node completed";
+    document.getElementById("step2").className = "step-node completed";
+    document.getElementById("step3").className = "step-node completed";
+    document.getElementById("step4").className = "step-node active";
+  };
+
+  document.getElementById("btn-casual").onclick = selectDifficulty;
+  document.getElementById("btn-realistic").onclick = selectDifficulty;
+  document.getElementById("btn-ultra").onclick = selectDifficulty;
+
+  document.getElementById("login-back-btn").onclick = function () {
+    document.getElementById("login-panel").style.display = "none";
+    document.getElementById("home-panel").style.display = "flex";
+    clearDynamicSteps();
+    document.getElementById("timeline-bar").style.width = "0%";
+    document.getElementById("step1").className = "step-node active";
+    document.getElementById("step2").className = "step-node";
+  };
+
+  document.getElementById("difficulty-back-btn").onclick = function () {
+    document.getElementById("difficulty-panel").style.display = "none";
+    document.getElementById("login-panel").style.display = "block";
+    clearDynamicSteps();
+    document.getElementById("timeline-bar").style.width = "100%";
+    document.getElementById("step1").className = "step-node completed";
+    document.getElementById("step2").className = "step-node active";
+  };
+
+  document.getElementById("profile-back-btn").onclick = function () {
+    document.getElementById("profile-panel").style.display = "none";
+    document.getElementById("difficulty-panel").style.display = "block";
+    let node4 = document.getElementById("step4");
+    if (node4) node4.remove();
+    document.getElementById("timeline-bar").style.width = "50%";
+    document.getElementById("step1").className = "step-node completed";
+    document.getElementById("step2").className = "step-node completed";
+    document.getElementById("step3").className = "step-node active";
+  };
+</script>
+
   </body>
 </html>
