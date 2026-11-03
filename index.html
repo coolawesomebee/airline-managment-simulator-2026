@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Airline Management Simulator 2026</title>
+    <link rel="stylesheet" href="https://unpkg.com" />
     <style>
       body {
         background-color: #0b132b;
@@ -606,12 +607,42 @@
         &copy; 2026 Airline Management Simulator. All rights reserved.
       </p>
     </footer>
-<link rel="stylesheet" href="https://unpkg.com" />
-<script src="https://unpkg.com"></script>
 
+<script src="https://unpkg.com"></script>
 <script>
   let hubDropdown = null;
-  const targetDatasetUrl = "./airports.json";
+  const targetDatasetUrl = "./hubs.json";
+
+  let gameSession = {
+    authID: "",
+    complexityMode: "",
+    ceoName: "",
+    airlineBrand: "",
+    assignedHubCode: ""
+  };
+
+  function clearDynamicSteps() {
+    let node3 = document.getElementById("step3");
+    let node4 = document.getElementById("step4");
+    if (node3) node3.remove();
+    if (node4) node4.remove();
+  }
+
+  function injectStepNode(id, number, labelText) {
+    if (document.getElementById(id)) return;
+    let container = document.getElementById("timeline-box");
+    let node = document.createElement("div");
+    node.className = "step-node";
+    node.id = id;
+    node.innerText = number;
+
+    let label = document.createElement("div");
+    label.className = "step-label";
+    label.innerText = labelText;
+
+    node.appendChild(label);
+    container.appendChild(node);
+  }
 
   function initDropdown() {
     const el = document.getElementById('hub-selection');
@@ -622,17 +653,17 @@
       settings: {
         placeholderText: 'Search 5,000ft+ lighted corporate hubs...',
         allowDeselect: false
+      },
+      events: {
+        afterChange: (newVal) => {
+          if (newVal && newVal.length > 0) {
+            gameSession.assignedHubCode = newVal.value;
+          }
+        }
       }
     });
     return true;
   }
-
-  window.addEventListener("DOMContentLoaded", () => {
-    const ready = initDropdown();
-    if (ready) {
-      loadGlobalAirports();
-    }
-  });
 
   async function loadGlobalAirports() {
     try {
@@ -642,17 +673,25 @@
       const parsedData = await response.json();
       const parsedList = [];
 
-      // Loop through the data keys coming from your GitHub workflow script
-      Object.keys(parsedData).forEach(codeKey => {
-        let ap = parsedData[codeKey];
-        parsedList.push({
-          text: `[${codeKey}] ${ap.name} - ${ap.municipality || 'Regional Base'}`,
-          value: codeKey,
-          country: ap.country || "Global System Nodes"
+      if (Array.isArray(parsedData)) {
+        parsedData.forEach(ap => {
+          parsedList.push({
+            text: `[${ap.iata_code}] ${ap.name} - ${ap.municipality || 'Regional Base'}`,
+            value: ap.iata_code,
+            country: ap.iso_country || "Global System Nodes"
+          });
         });
-      });
+      } else {
+        Object.keys(parsedData).forEach(codeKey => {
+          let ap = parsedData[codeKey];
+          parsedList.push({
+            text: `[${codeKey}] ${ap.name} - ${ap.municipality || 'Regional Base'}`,
+            value: codeKey,
+            country: ap.country || "Global System Nodes"
+          });
+        });
+      }
 
-      // Sort alpha-numerically by country destination
       parsedList.sort((a, b) => a.country.localeCompare(b.country) || a.text.localeCompare(b.text));
 
       const structuredGroups = [];
@@ -693,94 +732,80 @@
     }
   }
 
-  function clearDynamicSteps() {
-    let node3 = document.getElementById("step3");
-    let node4 = document.getElementById("step4");
-    if (node3) node3.remove();
-    if (node4) node4.remove();
-  }
+  window.addEventListener("DOMContentLoaded", () => {
+    initDropdown();
+    loadGlobalAirports();
 
-  function injectStepNode(id, number, labelText) {
-    if (document.getElementById(id)) return;
-    let container = document.getElementById("timeline-box");
-    let node = document.createElement("div");
-    node.className = "step-node";
-    node.id = id;
-    node.innerText = number;
+    document.getElementById("launch-btn").onclick = function () {
+      document.getElementById("home-panel").style.display = "none";
+      document.getElementById("login-panel").style.display = "block";
+      clearDynamicSteps();
+      document.getElementById("timeline-bar").style.width = "100%";
+      document.getElementById("step1").className = "step-node completed";
+      document.getElementById("step2").className = "step-node active";
+    };
 
-    let label = document.createElement("div");
-    label.className = "step-label";
-    label.innerText = labelText;
+    document.getElementById("login-btn").onclick = function () {
+      gameSession.authID = document.getElementById("username").value;
+      document.getElementById("login-panel").style.display = "none";
+      document.getElementById("difficulty-panel").style.display = "block";
+      clearDynamicSteps();
+      injectStepNode("step3", "3", "Rules");
+      document.getElementById("timeline-bar").style.width = "50%";
+      document.getElementById("step1").className = "step-node completed";
+      document.getElementById("step2").className = "step-node completed";
+      document.getElementById("step3").className = "step-node active";
+    };
 
-    node.appendChild(label);
-    container.appendChild(node);
-  }
+    let selectDifficulty = function (modeName) {
+      gameSession.complexityMode = modeName;
+      document.getElementById("difficulty-panel").style.display = "none";
+      document.getElementById("profile-panel").style.display = "block";
+      injectStepNode("step4", "4", "Setup");
+      document.getElementById("timeline-bar").style.width = "100%";
+      document.getElementById("step1").className = "step-node completed";
+      document.getElementById("step2").className = "step-node completed";
+      document.getElementById("step3").className = "step-node completed";
+      document.getElementById("step4").className = "step-node active";
+    };
 
-  document.getElementById("launch-btn").onclick = function () {
-    document.getElementById("home-panel").style.display = "none";
-    document.getElementById("login-panel").style.display = "block";
-    clearDynamicSteps();
-    document.getElementById("timeline-bar").style.width = "100%";
-    document.getElementById("step1").className = "step-node completed";
-    document.getElementById("step2").className = "step-node active";
-  };
+    document.getElementById("btn-casual").onclick = () => selectDifficulty("Casual");
+    document.getElementById("btn-realistic").onclick = () => selectDifficulty("Realistic");
+    document.getElementById("btn-ultra").onclick = () => selectDifficulty("Ultra");
 
-  document.getElementById("login-btn").onclick = function () {
-    document.getElementById("login-panel").style.display = "none";
-    document.getElementById("difficulty-panel").style.display = "block";
-    clearDynamicSteps();
-    injectStepNode("step3", "3", "Rules");
-    document.getElementById("timeline-bar").style.width = "50%";
-    document.getElementById("step1").className = "step-node completed";
-    document.getElementById("step2").className = "step-node completed";
-    document.getElementById("step3").className = "step-node active";
-  };
+    document.getElementById("login-back-btn").onclick = function () {
+      document.getElementById("login-panel").style.display = "none";
+      document.getElementById("home-panel").style.display = "flex";
+      clearDynamicSteps();
+      document.getElementById("timeline-bar").style.width = "0%";
+      document.getElementById("step1").className = "step-node active";
+      document.getElementById("step2").className = "step-node";
+    };
 
-  let selectDifficulty = function () {
-    document.getElementById("difficulty-panel").style.display = "none";
-    document.getElementById("profile-panel").style.display = "block";
-    injectStepNode("step4", "4", "Setup");
-    document.getElementById("timeline-bar").style.width = "100%";
-    document.getElementById("step1").className = "step-node completed";
-    document.getElementById("step2").className = "step-node completed";
-    document.getElementById("step3").className = "step-node completed";
-    document.getElementById("step4").className = "step-node active";
-  };
+    document.getElementById("difficulty-back-btn").onclick = function () {
+      document.getElementById("difficulty-panel").style.display = "none";
+      document.getElementById("login-panel").style.display = "block";
+      clearDynamicSteps();
+      document.getElementById("timeline-bar").style.width = "100%";
+      document.getElementById("step1").className = "step-node completed";
+      document.getElementById("step2").className = "step-node active";
+    };
 
-  document.getElementById("btn-casual").onclick = selectDifficulty;
-  document.getElementById("btn-realistic").onclick = selectDifficulty;
-  document.getElementById("btn-ultra").onclick = selectDifficulty;
+    document.getElementById("profile-back-btn").onclick = function () {
+      document.getElementById("profile-panel").style.display = "none";
+      document.getElementById("difficulty-panel").style.display = "block";
+      let node4 = document.getElementById("step4");
+      if (node4) node4.remove();
+      document.getElementById("timeline-bar").style.width = "50%";
+      document.getElementById("step1").className = "step-node completed";
+      document.getElementById("step2").className = "step-node completed";
+      document.getElementById("step3").className = "step-node active";
+    };
 
-  document.getElementById("login-back-btn").onclick = function () {
-    document.getElementById("login-panel").style.display = "none";
-    document.getElementById("home-panel").style.display = "flex";
-    clearDynamicSteps();
-    document.getElementById("timeline-bar").style.width = "0%";
-    document.getElementById("step1").className = "step-node active";
-    document.getElementById("step2").className = "step-node";
-  };
-
-  document.getElementById("difficulty-back-btn").onclick = function () {
-    document.getElementById("difficulty-panel").style.display = "none";
-    document.getElementById("login-panel").style.display = "block";
-    clearDynamicSteps();
-    document.getElementById("timeline-bar").style.width = "100%";
-    document.getElementById("step1").className = "step-node completed";
-    document.getElementById("step2").className = "step-node active";
-  };
-
-  document.getElementById("profile-back-btn").onclick = function () {
-    document.getElementById("profile-panel").style.display = "none";
-    document.getElementById("difficulty-panel").style.display = "block";
-    let node4 = document.getElementById("step4");
-    if (node4) node4.remove();
-    document.getElementById("timeline-bar").style.width = "50%";
-    document.getElementById("step1").className = "step-node completed";
-    document.getElementById("step2").className = "step-node completed";
-    document.getElementById("step3").className = "step-node active";
-  };
+    document.getElementById("profile-next-btn").onclick = function () {
+      gameSession.ceoName = document.getElementById("ceo-name").value;
+      gameSession.airlineBrand = document.getElementById("airline-name").value;
+      alert(`Charter Signed!\nCEO: ${gameSession.ceoName}\nAirline: ${gameSession.airlineBrand}\nHub IATA: ${gameSession.assignedHubCode}\nMode: ${gameSession.complexityMode}`);
+    };
+  });
 </script>
-
-
-  </body>
-</html>
