@@ -5,12 +5,13 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    # Add these two lines right here:
     permissions:
       contents: write
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+        with:
+          persist-credentials: true
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -28,5 +29,5 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add hubs.json
-          git commit -m "Automated airport data update" || exit 0
-          git push
+          git commit -m "Automated airport data update" || echo "No changes to commit"
+          git push origin HEAD
