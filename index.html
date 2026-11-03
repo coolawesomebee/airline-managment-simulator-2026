@@ -611,7 +611,8 @@
 <script src="https://unpkg.com"></script>
 <script>
   let hubDropdown = null;
-  const targetDatasetUrl = "./hubs.json";
+  const airportsUrl = "https://davidmegginson.github.io/ourairports-data/airports.csv";
+  const runwaysUrl = "https://davidmegginson.github.io/ourairports-data/runways.csv";
 
   let gameSession = {
     authID: "",
@@ -665,32 +666,53 @@
     return true;
   }
 
+  function parseCSV(text) {
+    let lines = text.split('\n');
+    if (lines.length === 0) return [];
+    
+    let headers = lines[0].split(',').map(h => h.replace(/["']/g, '').trim());
+    
+    return lines.slice(1).filter(line => line.trim() !== '').map(line => {
+      let matches = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || line.split(',');
+      let values = matches.map(v => v.replace(/["']/g, '').trim());
+      let obj = {};
+      headers.forEach((header, i) => {
+        obj[header] = values[i] || "";
+      });
+      return obj;
+    });
+  }
+
   async function loadGlobalAirports() {
     try {
-      const response = await fetch(targetDatasetUrl);
-      if (!response.ok) throw new Error("Dataset download failed.");
+      const [airportsRes, runwaysRes] = await Promise.all([
+        fetch(airportsUrl).then(res => res.text()),
+        fetch(runwaysUrl).then(res => res.text())
+      ]);
 
-      const parsedData = await response.json();
+      const airports = parseCSV(airportsRes);
+      const runways = parseCSV(runwaysRes);
+
+      const validAirportRefs = new Set();
+      runways.forEach(r => {
+        let length = parseInt(r.length_ft);
+        let isLighted = r.lighted === "1";
+        if (length > 5000 && isLighted) {
+          validAirportRefs.add(r.airport_ref);
+        }
+      });
+
       const parsedList = [];
-
-      if (Array.isArray(parsedData)) {
-        parsedData.forEach(ap => {
+      airports.forEach(ap => {
+        let isOperational = ap.type === 'medium_airport' || ap.type === 'large_airport';
+        if (validAirportRefs.has(ap.id) && isOperational && ap.iata_code) {
           parsedList.push({
             text: `[${ap.iata_code}] ${ap.name} - ${ap.municipality || 'Regional Base'}`,
             value: ap.iata_code,
             country: ap.iso_country || "Global System Nodes"
           });
-        });
-      } else {
-        Object.keys(parsedData).forEach(codeKey => {
-          let ap = parsedData[codeKey];
-          parsedList.push({
-            text: `[${codeKey}] ${ap.name} - ${ap.municipality || 'Regional Base'}`,
-            value: codeKey,
-            country: ap.country || "Global System Nodes"
-          });
-        });
-      }
+        }
+      });
 
       parsedList.sort((a, b) => a.country.localeCompare(b.country) || a.text.localeCompare(b.text));
 
@@ -718,13 +740,11 @@
       }
 
     } catch (error) {
-      console.error("Local database fetch exception, initializing hardcoded core hubs:", error);
+      console.error("Database connection fault, switching to core fallbacks:", error);
       const fallbacks = [
         { text: "[SIN] Singapore Changi Airport - Singapore", value: "SIN" },
         { text: "[LAX] Los Angeles International - Los Angeles", value: "LAX" },
-        { text: "[LHR] London Heathrow Airport - London", value: "LHR" },
-        { text: "[TEB] Teterboro Executive Airport - New Jersey", value: "TEB" },
-        { text: "[VNY] Van Nuys Corporate Jet Hub - Los Angeles", value: "VNY" }
+        { text: "[LHR] London Heathrow Airport - London", value: "LHR" }
       ];
       if (hubDropdown) {
         hubDropdown.setData(fallbacks);
