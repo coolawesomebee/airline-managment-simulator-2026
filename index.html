@@ -584,241 +584,241 @@ footer hr {
       <p class="copyright-line">&copy; 2026 Airline Management Simulator. All rights reserved.</p>
     </footer>
 
-    <script src="https://unpkg.com"></script>
+        <script src="https://unpkg.com"></script>
     <script>
     let hubDropdown = null;
-const airportsUrl = "https://github.io";
-const runwaysUrl = "https://github.io";
+    const airportsUrl = "https://github.io";
+    const runwaysUrl = "https://github.io";
 
-let gameSession = {
-  authID: "",
-  complexityMode: "",
-  ceoName: "",
-  airlineBrand: "",
-  assignedHubCode: ""
-};
+    let gameSession = {
+      authID: "",
+      complexityMode: "",
+      ceoName: "",
+      airlineBrand: "",
+      assignedHubCode: ""
+    };
 
-function clearDynamicSteps() {
-  let node3 = document.getElementById("step3");
-  let node4 = document.getElementById("step4");
-  if (node3) node3.remove();
-  if (node4) node4.remove();
-}
+    function clearDynamicSteps() {
+      let node3 = document.getElementById("step3");
+      let node4 = document.getElementById("step4");
+      if (node3) node3.remove();
+      if (node4) node4.remove();
+    }
 
-function injectStepNode(id, number, labelText) {
-  if (document.getElementById(id)) return;
-  let container = document.getElementById("timeline-box");
-  let node = document.createElement("div");
-  node.className = "step-node";
-  node.id = id;
-  node.innerText = number;
+    function injectStepNode(id, number, labelText) {
+      if (document.getElementById(id)) return;
+      let container = document.getElementById("timeline-box");
+      let node = document.createElement("div");
+      node.className = "step-node";
+      node.id = id;
+      node.innerText = number;
 
-  let label = document.createElement("div");
-  label.className = "step-label";
-  label.innerText = labelText;
+      let label = document.createElement("div");
+      label.className = "step-label";
+      label.innerText = labelText;
 
-  node.appendChild(label);
-  container.appendChild(node);
-}
+      node.appendChild(label);
+      container.appendChild(node);
+    }
 
-function initDropdown() {
-  const el = document.getElementById('hub-selection');
-  if (!el) return false;
-  
-  hubDropdown = new SlimSelect({
-    select: '#hub-selection',
-    settings: {
-      placeholderText: 'Search 5,000ft+ lighted corporate hubs...',
-      allowDeselect: false
-    },
-    events: {
-      afterChange: (newVal) => {
-        if (newVal && newVal.length > 0) {
-          gameSession.assignedHubCode = newVal.value;
+    function initDropdown() {
+      const el = document.getElementById('hub-selection');
+      if (!el) return false;
+      
+      hubDropdown = new SlimSelect({
+        select: '#hub-selection',
+        settings: {
+          placeholderText: 'Search 5,000ft+ lighted corporate hubs...',
+          allowDeselect: false
+        },
+        events: {
+          afterChange: (newVal) => {
+            if (newVal && newVal.length > 0) {
+              gameSession.assignedHubCode = newVal[0].value;
+            }
+          }
         }
-      }
+      });
+      return true;
     }
-  });
-  return true;
-}
 
-function parseCSV(text) {
-  let lines = text.split('\n');
-  if (lines.length === 0) return [];
-  
-  let headers = lines[0].split(',').map(h => h.replace(/["']/g, '').trim());
-  
-  return lines.slice(1).filter(line => line.trim() !== '').map(line => {
-    let values = [];
-    let current = '';
-    let inQuotes = false;
-    
-    for (let i = 0; i < line.length; i++) {
-      let char = line[i];
-      if (char === '"' || char === "'") {
-        inQuotes = !inQuotes;
-      } else if (char === ',' && !inQuotes) {
+    function parseCSV(text) {
+      let lines = text.split('\n');
+      if (lines.length === 0) return [];
+      
+      let headers = lines[0].split(',').map(h => h.replace(/["']/g, '').trim());
+      
+      return lines.slice(1).filter(line => line.trim() !== '').map(line => {
+        let values = [];
+        let current = '';
+        let inQuotes = false;
+        
+        for (let i = 0; i < line.length; i++) {
+          let char = line[i];
+          if (char === '"' || char === "'") {
+            inQuotes = !inQuotes;
+          } else if (char === ',' && !inQuotes) {
+            values.push(current.trim());
+            current = '';
+          } else {
+            current += char;
+          }
+        }
         values.push(current.trim());
-        current = '';
-      } else {
-        current += char;
-      }
-    }
-    values.push(current.trim());
-    
-    let obj = {};
-    headers.forEach((header, i) => {
-      obj[header] = values[i] ? values[i].replace(/["']/g, '') : "";
-    });
-    return obj;
-  });
-}
-
-async function loadGlobalAirports() {
-  try {
-    const [airportsRes, runwaysRes] = await Promise.all([
-      fetch(airportsUrl).then(res => res.text()),
-      fetch(runwaysUrl).then(res => res.text())
-    ]);
-
-    const airports = parseCSV(airportsRes);
-    const runways = parseCSV(runwaysRes);
-
-    const validAirportRefs = new Set();
-    runways.forEach(r => {
-      let length = parseInt(r.length_ft);
-      let isLighted = r.lighted === "1";
-      if (length > 5000 && isLighted) {
-        validAirportRefs.add(r.airport_ref);
-      }
-    });
-
-    const parsedList = [];
-    airports.forEach(ap => {
-      let isOperational = ap.type === 'medium_airport' || ap.type === 'large_airport';
-      if (validAirportRefs.has(ap.id) && isOperational && ap.iata_code) {
-        parsedList.push({
-          text: `[${ap.iata_code}] ${ap.name} - ${ap.municipality || 'Regional Base'}`,
-          value: ap.iata_code,
-          country: ap.iso_country || "Global System Nodes"
+        
+        let obj = {};
+        headers.forEach((header, i) => {
+          obj[header] = values[i] ? values[i].replace(/["']/g, '') : "";
         });
-      }
-    });
+        return obj;
+      });
+    }
 
-    parsedList.sort((a, b) => a.country.localeCompare(b.country) || a.text.localeCompare(b.text));
+    async function loadGlobalAirports() {
+      try {
+        const [airportsRes, runwaysRes] = await Promise.all([
+          fetch(airportsUrl).then(res => res.text()),
+          fetch(runwaysUrl).then(res => res.text())
+        ]);
 
-    const structuredGroups = [];
-    let currentCountry = "";
-    let currentGroupOptions = [];
+        const airports = parseCSV(airportsRes);
+        const runways = parseCSV(runwaysRes);
 
-    parsedList.forEach(ap => {
-      if (ap.country !== currentCountry) {
+        const validAirportRefs = new Set();
+        runways.forEach(r => {
+          let length = parseInt(r.length_ft);
+          let isLighted = r.lighted === "1";
+          if (length > 5000 && isLighted) {
+            validAirportRefs.add(r.airport_ref);
+          }
+        });
+
+        const parsedList = [];
+        airports.forEach(ap => {
+          let isOperational = ap.type === 'medium_airport' || ap.type === 'large_airport';
+          if (validAirportRefs.has(ap.id) && isOperational && ap.iata_code) {
+            parsedList.push({
+              text: `[${ap.iata_code}] ${ap.name} - ${ap.municipality || 'Regional Base'}`,
+              value: ap.iata_code,
+              country: ap.iso_country || "Global System Nodes"
+            });
+          }
+        });
+
+        parsedList.sort((a, b) => a.country.localeCompare(b.country) || a.text.localeCompare(b.text));
+
+        const structuredGroups = [];
+        let currentCountry = "";
+        let currentGroupOptions = [];
+
+        parsedList.forEach(ap => {
+          if (ap.country !== currentCountry) {
+            if (currentCountry !== "") {
+              structuredGroups.push({ label: currentCountry, options: currentGroupOptions });
+            }
+            currentCountry = ap.country;
+            currentGroupOptions = [];
+          }
+          currentGroupOptions.push({ text: ap.text, value: ap.value });
+        });
+
         if (currentCountry !== "") {
           structuredGroups.push({ label: currentCountry, options: currentGroupOptions });
         }
-        currentCountry = ap.country;
-        currentGroupOptions = [];
+
+        if (hubDropdown) {
+          hubDropdown.setData(structuredGroups);
+        }
+
+      } catch (error) {
+        console.error("Database connection fault, switching to core fallbacks:", error);
+        const fallbacks = [
+          { text: "[SIN] Singapore Changi Airport - Singapore", value: "SIN" },
+          { text: "[LAX] Los Angeles International - Los Angeles", value: "LAX" },
+          { text: "[LHR] London Heathrow Airport - London", value: "LHR" }
+        ];
+        if (hubDropdown) {
+          hubDropdown.setData(fallbacks);
+        }
       }
-      currentGroupOptions.push({ text: ap.text, value: ap.value });
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+      initDropdown();
+      loadGlobalAirports();
+
+      document.getElementById("launch-btn").onclick = function () {
+        document.getElementById("home-panel").style.display = "none";
+        document.getElementById("login-panel").style.display = "block";
+        clearDynamicSteps();
+        document.getElementById("timeline-bar").style.width = "100%";
+        document.getElementById("step1").className = "step-node completed";
+        document.getElementById("step2").className = "step-node active";
+      };
+
+      document.getElementById("login-btn").onclick = function () {
+        gameSession.authID = document.getElementById("username").value;
+        document.getElementById("login-panel").style.display = "none";
+        document.getElementById("difficulty-panel").style.display = "block";
+        clearDynamicSteps();
+        injectStepNode("step3", "3", "Rules");
+        document.getElementById("timeline-bar").style.width = "50%";
+        document.getElementById("step1").className = "step-node completed";
+        document.getElementById("step2").className = "step-node completed";
+        document.getElementById("step3").className = "step-node active";
+      };
+
+      let selectDifficulty = function (modeName) {
+        gameSession.complexityMode = modeName;
+        document.getElementById("difficulty-panel").style.display = "none";
+        document.getElementById("profile-panel").style.display = "block";
+        injectStepNode("step4", "4", "Setup");
+        document.getElementById("timeline-bar").style.width = "100%";
+        document.getElementById("step1").className = "step-node completed";
+        document.getElementById("step2").className = "step-node completed";
+        document.getElementById("step3").className = "step-node completed";
+        document.getElementById("step4").className = "step-node active";
+      };
+
+      document.getElementById("btn-casual").onclick = () => selectDifficulty("Casual");
+      document.getElementById("btn-realistic").onclick = () => selectDifficulty("Realistic");
+      document.getElementById("btn-ultra").onclick = () => selectDifficulty("Ultra");
+
+      document.getElementById("login-back-btn").onclick = function () {
+        document.getElementById("login-panel").style.display = "none";
+        document.getElementById("home-panel").style.display = "flex";
+        clearDynamicSteps();
+        document.getElementById("timeline-bar").style.width = "0%";
+        document.getElementById("step1").className = "step-node active";
+        document.getElementById("step2").className = "step-node";
+      };
+
+      document.getElementById("difficulty-back-btn").onclick = function () {
+        document.getElementById("difficulty-panel").style.display = "none";
+        document.getElementById("login-panel").style.display = "block";
+        clearDynamicSteps();
+        document.getElementById("timeline-bar").style.width = "100%";
+        document.getElementById("step1").className = "step-node completed";
+        document.getElementById("step2").className = "step-node active";
+      };
+
+      document.getElementById("profile-back-btn").onclick = function () {
+        document.getElementById("profile-panel").style.display = "none";
+        document.getElementById("difficulty-panel").style.display = "block";
+        let node4 = document.getElementById("step4");
+        if (node4) node4.remove();
+        document.getElementById("timeline-bar").style.width = "50%";
+        document.getElementById("step1").className = "step-node completed";
+        document.getElementById("step2").className = "step-node completed";
+        document.getElementById("step3").className = "step-node active";
+      };
+
+      document.getElementById("profile-next-btn").onclick = function () {
+        gameSession.ceoName = document.getElementById("ceo-name").value;
+        gameSession.airlineBrand = document.getElementById("airline-name").value;
+        alert(`Charter Signed!\nCEO: ${gameSession.ceoName}\nAirline: ${gameSession.airlineBrand}\nHub: ${gameSession.assignedHubCode}`);
+      };
     });
-
-    if (currentCountry !== "") {
-      structuredGroups.push({ label: currentCountry, options: currentGroupOptions });
-    }
-
-    if (hubDropdown) {
-      hubDropdown.setData(structuredGroups);
-    }
-
-  } catch (error) {
-    console.error("Database connection fault, switching to core fallbacks:", error);
-    const fallbacks = [
-      { text: "[SIN] Singapore Changi Airport - Singapore", value: "SIN" },
-      { text: "[LAX] Los Angeles International - Los Angeles", value: "LAX" },
-      { text: "[LHR] London Heathrow Airport - London", value: "LHR" }
-    ];
-    if (hubDropdown) {
-      hubDropdown.setData(fallbacks);
-    }
-  }
-}
-
-window.addEventListener("DOMContentLoaded", () => {
-  initDropdown();
-  loadGlobalAirports();
-
-  document.getElementById("launch-btn").onclick = function () {
-    document.getElementById("home-panel").style.display = "none";
-    document.getElementById("login-panel").style.display = "block";
-    clearDynamicSteps();
-    document.getElementById("timeline-bar").style.width = "100%";
-    document.getElementById("step1").className = "step-node completed";
-    document.getElementById("step2").className = "step-node active";
-  };
-
-  document.getElementById("login-btn").onclick = function () {
-    gameSession.authID = document.getElementById("username").value;
-    document.getElementById("login-panel").style.display = "none";
-    document.getElementById("difficulty-panel").style.display = "block";
-    clearDynamicSteps();
-    injectStepNode("step3", "3", "Rules");
-    document.getElementById("timeline-bar").style.width = "50%";
-    document.getElementById("step1").className = "step-node completed";
-    document.getElementById("step2").className = "step-node completed";
-    document.getElementById("step3").className = "step-node active";
-  };
-
-  let selectDifficulty = function (modeName) {
-    gameSession.complexityMode = modeName;
-    document.getElementById("difficulty-panel").style.display = "none";
-    document.getElementById("profile-panel").style.display = "block";
-    injectStepNode("step4", "4", "Setup");
-    document.getElementById("timeline-bar").style.width = "100%";
-    document.getElementById("step1").className = "step-node completed";
-    document.getElementById("step2").className = "step-node completed";
-    document.getElementById("step3").className = "step-node completed";
-    document.getElementById("step4").className = "step-node active";
-  };
-
-  document.getElementById("btn-casual").onclick = () => selectDifficulty("Casual");
-  document.getElementById("btn-realistic").onclick = () => selectDifficulty("Realistic");
-  document.getElementById("btn-ultra").onclick = () => selectDifficulty("Ultra");
-
-  document.getElementById("login-back-btn").onclick = function () {
-    document.getElementById("login-panel").style.display = "none";
-    document.getElementById("home-panel").style.display = "flex";
-    clearDynamicSteps();
-    document.getElementById("timeline-bar").style.width = "0%";
-    document.getElementById("step1").className = "step-node active";
-    document.getElementById("step2").className = "step-node";
-  };
-
-  document.getElementById("difficulty-back-btn").onclick = function () {
-    document.getElementById("difficulty-panel").style.display = "none";
-    document.getElementById("login-panel").style.display = "block";
-    clearDynamicSteps();
-    document.getElementById("timeline-bar").style.width = "100%";
-    document.getElementById("step1").className = "step-node completed";
-    document.getElementById("step2").className = "step-node active";
-  };
-
-  document.getElementById("profile-back-btn").onclick = function () {
-    document.getElementById("profile-panel").style.display = "none";
-    document.getElementById("difficulty-panel").style.display = "block";
-    let node4 = document.getElementById("step4");
-    if (node4) node4.remove();
-    document.getElementById("timeline-bar").style.width = "50%";
-    document.getElementById("step1").className = "step-node completed";
-    document.getElementById("step2").className = "step-node completed";
-    document.getElementById("step3").className = "step-node active";
-  };
-
-  document.getElementById("profile-next-btn").onclick = function () {
-    gameSession.ceoName = document.getElementById("ceo-name").value;
-    gameSession.airlineBrand = document.getElementById("airline-name").value;
-    alert(`Charter Signed!\nCEO: ${gameSession.ceoName}\nAirline: ${gameSession.airlineBrand}\nHub IATA: ${gameSession.assignedHubCode}\nMode: ${gameSession.complexityMode}`);
-  };
-});
     </script>
   </body>
 </html>
