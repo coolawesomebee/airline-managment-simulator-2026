@@ -642,10 +642,11 @@
       return true;
     }
 
-        function parseCSV(text) {
+           function parseCSV(text) {
       let lines = text.split('\n');
       if (lines.length === 0) return [];
       
+      // FIX: Changed lines.split to lines[0].split to isolate the header string element correctly
       let headers = lines[0].split(',').map(h => h.replace(/["']/g, '').trim());
       
       return lines.slice(1).filter(line => line.trim() !== '').map(line => {
