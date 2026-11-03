@@ -146,7 +146,6 @@
         margin-top: 0;
         margin-bottom: 20px;
       }
-
       .options-grid {
         display: grid;
         grid-template-columns: 1fr;
@@ -517,7 +516,6 @@
         <button id="login-back-btn" class="btn back-btn">🔙 Back</button>
       </div>
 
-
            <div id="difficulty-panel" class="view-panel">
         <h2>Select Operational Complexity Mode</h2>
         <div class="options-grid">
@@ -642,11 +640,11 @@
       return true;
     }
 
-        function parseCSV(text) {
+      function parseCSV(text) {
       let lines = text.split('\n');
       if (lines.length === 0) return [];
       
-      // FIX: Correctly targeting the first element array index [0] to extract headers
+      // FIXED: Safely extracting the first row to isolate header field variables
       let headers = lines[0].split(',').map(h => h.replace(/["']/g, '').trim());
       
       return lines.slice(1).filter(line => line.trim() !== '').map(line => {
@@ -823,3 +821,4 @@
     </script>
   </body>
 </html>
+
