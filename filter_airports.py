@@ -2,8 +2,8 @@ import pandas as pd
 import json
 
 # Fetch live data
-airports = pd.read_csv('https://github.io')
-runways = pd.read_csv('https://github.io')
+airports = pd.read_csv('https://davidmegginson.github.io/ourairports-data/airports.csv')
+runways = pd.read_csv('https://davidmegginson.github.io/ourairports-data/runways.csv')
 
 # Filter criteria
 filtered_runways = runways[(runways['length_ft'] > 5000) & (runways['lighted'] == 1)]
